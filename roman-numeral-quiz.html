@@ -34,7 +34,14 @@
     }
 
     button { font: inherit; }
-    .app { width: min(760px, 100%); }
+    .layout {
+      width: min(1080px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 760px) 250px;
+      align-items: start;
+      gap: 22px;
+    }
+    .app { width: 100%; }
     .brand {
       display: flex;
       align-items: center;
@@ -121,9 +128,12 @@
       font-size: clamp(5.2rem, 19vw, 9rem);
       line-height: .95;
       letter-spacing: .04em;
+      white-space: nowrap;
       color: var(--purple-dark);
       text-shadow: 0 5px 0 #e7e2ff;
     }
+    .numeral.long { font-size: clamp(3.1rem, 10vw, 5.2rem); letter-spacing: .025em; }
+    .numeral.very-long { font-size: clamp(2.25rem, 7vw, 3.45rem); letter-spacing: .01em; }
 
     .answers {
       display: grid;
@@ -223,6 +233,38 @@
     .primary:hover, .primary:focus-visible { outline: 3px solid rgba(102,88,211,.25); outline-offset: 3px; }
     .primary:active { transform: translateY(5px); box-shadow: 0 3px 0 var(--purple-dark); }
     .hint { margin: 20px 0 0; color: var(--muted); font-size: .78rem; }
+    .legend {
+      margin-top: 57px;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,253,248,.96);
+      border: 2px solid rgba(255,255,255,.85);
+      box-shadow: var(--shadow);
+    }
+    .legend h2 { margin: 0 0 5px; font-size: 1.25rem; letter-spacing: -.025em; }
+    .legend-intro { margin: 0 0 17px; color: var(--muted); font-size: .82rem; }
+    .legend-list { display: grid; gap: 8px; margin: 0; }
+    .legend-row {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: center;
+      min-height: 45px;
+      border-radius: 13px;
+      background: #f4f1fb;
+      overflow: hidden;
+    }
+    .legend-row dt {
+      align-self: stretch;
+      display: grid;
+      place-items: center;
+      margin: 0;
+      color: var(--purple-dark);
+      background: #e7e2ff;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    .legend-row dd { margin: 0; padding-left: 15px; font-weight: 900; }
 
     @media (max-width: 520px) {
       body { padding: 12px; }
@@ -234,12 +276,18 @@
       .answer { min-height: 68px; }
       .stats { gap: 7px; }
     }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 760px); justify-content: center; }
+      .legend { margin-top: 0; }
+      .legend-list { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
+  <div class="layout">
   <main class="app">
     <div class="brand"><span class="logo" aria-hidden="true">Ⅷ</span> Roman Rocket</div>
 
@@ -304,6 +352,22 @@
       <p class="hint">Press Enter to play again</p>
     </section>
   </main>
+
+  <aside class="legend" aria-labelledby="legend-title">
+    <p class="eyebrow">Quick hint</p>
+    <h2 id="legend-title">Roman numeral legend</h2>
+    <p class="legend-intro">Build any number from these seven symbols.</p>
+    <dl class="legend-list">
+      <div class="legend-row"><dt>I</dt><dd>1</dd></div>
+      <div class="legend-row"><dt>V</dt><dd>5</dd></div>
+      <div class="legend-row"><dt>X</dt><dd>10</dd></div>
+      <div class="legend-row"><dt>L</dt><dd>50</dd></div>
+      <div class="legend-row"><dt>C</dt><dd>100</dd></div>
+      <div class="legend-row"><dt>D</dt><dd>500</dd></div>
+      <div class="legend-row"><dt>M</dt><dd>1&nbsp;000</dd></div>
+    </dl>
+  </aside>
+  </div>
 
   <script>
     // --- Easy-to-change game settings ---
@@ -420,7 +484,10 @@
         ? "Tip: press the answer number on your keyboard"
         : "Tip: type the answer, then press Enter";
       const answer = questions[questionIndex];
-      numeralEl.textContent = toRoman(answer);
+      const roman = toRoman(answer);
+      numeralEl.textContent = roman;
+      numeralEl.classList.toggle("long", roman.length >= 7 && roman.length < 10);
+      numeralEl.classList.toggle("very-long", roman.length >= 10);
       progressLabelEl.textContent = `Question ${questionIndex + 1} of ${TOTAL_QUESTIONS}`;
       progressFillEl.style.width = `${(questionIndex / TOTAL_QUESTIONS) * 100}%`;
       answersEl.replaceChildren();
