@@ -184,6 +184,30 @@
     .stat strong { display: block; font-size: clamp(1.35rem, 5vw, 1.9rem); font-variant-numeric: tabular-nums; }
     .stat span { color: var(--muted); font-size: .78rem; font-weight: 800; }
     .score-note { margin: 0 0 25px; color: var(--muted); font-size: .88rem; }
+    .level-picker {
+      width: min(310px, 100%);
+      margin: 0 auto 26px;
+      padding: 15px 17px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border: 2px solid var(--line);
+      border-radius: 17px;
+      background: #f7f5fc;
+      font-weight: 850;
+    }
+    .level-picker select {
+      border: 2px solid var(--line);
+      border-radius: 11px;
+      padding: 8px 30px 8px 10px;
+      color: var(--ink);
+      background: white;
+      font: inherit;
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .level-picker select:focus-visible { outline: 3px solid rgba(102,88,211,.25); border-color: var(--purple); }
     .primary {
       border: 0;
       border-radius: 16px;
@@ -224,6 +248,15 @@
       <p class="eyebrow">Roman numeral mission</p>
       <h1 id="intro-title">Ready to launch?</h1>
       <p class="subtitle">Match 10 Roman numerals with their numbers. Be accurate, then be quick!</p>
+      <label class="level-picker" for="intro-level">
+        <span>Game level</span>
+        <select id="intro-level">
+          <option value="8">1–8</option>
+          <option value="10">1–10</option>
+          <option value="100">1–100</option>
+          <option value="1000">1–1000</option>
+        </select>
+      </label>
       <button id="start" class="primary" type="button">Start game →</button>
       <p class="hint">Press Enter to start</p>
     </section>
@@ -244,7 +277,7 @@
 
       <div id="answers" class="answers" role="group" aria-label="Answer choices"></div>
       <p id="feedback" class="feedback" aria-live="polite"></p>
-      <p class="hint">Tip: press the answer number on your keyboard</p>
+      <p id="keyboard-hint" class="hint">Tip: press the answer number on your keyboard</p>
     </section>
 
     <section id="results" class="card result hidden" aria-labelledby="result-title">
@@ -258,6 +291,15 @@
         <div class="stat"><strong id="score-stat">0</strong><span>points</span></div>
       </div>
       <p class="score-note">Each correct answer earns 1,000 points, plus up to 200 speed points.</p>
+      <label class="level-picker" for="result-level">
+        <span>Next level</span>
+        <select id="result-level">
+          <option value="8">1–8</option>
+          <option value="10">1–10</option>
+          <option value="100">1–100</option>
+          <option value="1000">1–1000</option>
+        </select>
+      </label>
       <button id="restart" class="primary" type="button">Play again ↻</button>
       <p class="hint">Press Enter to play again</p>
     </section>
@@ -266,7 +308,7 @@
   <script>
     // --- Easy-to-change game settings ---
     const MIN_NUMBER = 1;
-    const MAX_NUMBER = 8;
+    let MAX_NUMBER = 8;
     const TOTAL_QUESTIONS = 10;
     const SPEED_WINDOW_SECONDS = 10;
     const CORRECT_POINTS = 1000;
@@ -289,6 +331,9 @@
     const progressLabelEl = document.querySelector("#progress-label");
     const progressFillEl = document.querySelector("#progress-fill");
     const timeFillEl = document.querySelector("#time-fill");
+    const keyboardHintEl = document.querySelector("#keyboard-hint");
+    const introLevelEl = document.querySelector("#intro-level");
+    const resultLevelEl = document.querySelector("#result-level");
     const startButton = document.querySelector("#start");
     const restartButton = document.querySelector("#restart");
 
@@ -300,6 +345,7 @@
     let questionStartedAt = 0;
     let timerId = null;
     let acceptingAnswer = false;
+    let typedAnswer = "";
 
     function toRoman(number) {
       let remaining = number;
@@ -367,8 +413,12 @@
 
     function renderQuestion() {
       acceptingAnswer = true;
+      typedAnswer = "";
       feedbackEl.textContent = "";
       feedbackEl.className = "feedback";
+      keyboardHintEl.textContent = MAX_NUMBER <= 8
+        ? "Tip: press the answer number on your keyboard"
+        : "Tip: type the answer, then press Enter";
       const answer = questions[questionIndex];
       numeralEl.textContent = toRoman(answer);
       progressLabelEl.textContent = `Question ${questionIndex + 1} of ${TOTAL_QUESTIONS}`;
@@ -410,7 +460,7 @@
         feedbackEl.textContent = `Correct! +${earned.toLocaleString()} points`;
         feedbackEl.classList.add("good");
       } else {
-        selectedButton.classList.add("wrong");
+        selectedButton?.classList.add("wrong");
         feedbackEl.textContent = `${toRoman(answer)} means ${answer}. You’ll get the next one!`;
         feedbackEl.classList.add("bad");
       }
@@ -461,17 +511,44 @@
       timerId = setInterval(updateTimer, 100);
     }
 
+    function setLevel(value) {
+      MAX_NUMBER = Number(value);
+      introLevelEl.value = String(MAX_NUMBER);
+      resultLevelEl.value = String(MAX_NUMBER);
+    }
+
+    function submitTypedAnswer() {
+      if (!typedAnswer) return;
+      const choice = Number(typedAnswer);
+      const matchingButton = [...answersEl.querySelectorAll("button")]
+        .find(button => Number(button.dataset.value) === choice);
+      chooseAnswer(matchingButton, choice);
+    }
+
     document.addEventListener("keydown", event => {
       if (!quiz.classList.contains("hidden") && acceptingAnswer && /^\d$/.test(event.key)) {
-        const matchingAnswer = [...answersEl.querySelectorAll("button")]
-          .find(button => Number(button.dataset.value) === Number(event.key));
-        matchingAnswer?.click();
+        if (MAX_NUMBER <= 8) {
+          typedAnswer = event.key;
+          submitTypedAnswer();
+        } else if (typedAnswer.length < String(MAX_NUMBER).length) {
+          typedAnswer += event.key;
+          keyboardHintEl.textContent = `Typed: ${typedAnswer} · press Enter to answer`;
+        }
+      } else if (!quiz.classList.contains("hidden") && acceptingAnswer && event.key === "Backspace") {
+        typedAnswer = typedAnswer.slice(0, -1);
+        keyboardHintEl.textContent = typedAnswer
+          ? `Typed: ${typedAnswer} · press Enter to answer`
+          : "Tip: type the answer, then press Enter";
+      } else if (!quiz.classList.contains("hidden") && acceptingAnswer && event.key === "Enter") {
+        submitTypedAnswer();
       } else if (!intro.classList.contains("hidden") && event.key === "Enter") {
         startGame();
       } else if (!results.classList.contains("hidden") && event.key === "Enter") {
         startGame();
       }
     });
+    introLevelEl.addEventListener("change", event => setLevel(event.target.value));
+    resultLevelEl.addEventListener("change", event => setLevel(event.target.value));
     startButton.addEventListener("click", startGame);
     restartButton.addEventListener("click", startGame);
     startButton.focus();
