@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roman Rocket — Numeral Quiz</title>
+  <style>
+    :root {
+      --ink: #202039;
+      --muted: #696986;
+      --paper: #fffdf8;
+      --purple: #6658d3;
+      --purple-dark: #493bb1;
+      --yellow: #ffd65a;
+      --green: #27a875;
+      --red: #e45666;
+      --line: #dedbef;
+      --shadow: 0 18px 55px rgba(54, 43, 112, .16);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: ui-rounded, "Avenir Next", "Nunito", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 12% 15%, rgba(255,214,90,.50) 0 8%, transparent 8.3%),
+        radial-gradient(circle at 88% 88%, rgba(102,88,211,.20) 0 13%, transparent 13.3%),
+        linear-gradient(145deg, #f5f0ff, #fff9e7);
+      display: grid;
+      place-items: center;
+      padding: 22px;
+    }
+
+    button { font: inherit; }
+    .app { width: min(760px, 100%); }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      font-weight: 900;
+      letter-spacing: -.03em;
+      font-size: clamp(1.25rem, 4vw, 1.65rem);
+    }
+    .logo {
+      width: 42px; height: 42px;
+      display: grid; place-items: center;
+      border-radius: 14px;
+      color: white;
+      background: var(--purple);
+      transform: rotate(-5deg);
+      box-shadow: 0 8px 18px rgba(102,88,211,.25);
+    }
+
+    .card {
+      background: rgba(255,253,248,.96);
+      border: 2px solid rgba(255,255,255,.85);
+      border-radius: 28px;
+      padding: clamp(22px, 5vw, 42px);
+      box-shadow: var(--shadow);
+    }
+    .hidden { display: none !important; }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-weight: 800;
+    }
+    .progress-label { color: var(--muted); }
+    .timer {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #f1effb;
+      color: var(--purple-dark);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+    .score-chip {
+      color: var(--purple-dark);
+      background: #f1effb;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+    .progress-track, .time-track {
+      height: 9px;
+      background: #e8e5f1;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill, .time-fill {
+      height: 100%; width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--purple), #9f77e8);
+      transition: width .35s ease;
+    }
+    .time-track { height: 5px; margin-top: 7px; background: #eeeaf4; }
+    .time-fill { width: 100%; background: var(--yellow); transition: none; }
+
+    .prompt { text-align: center; padding: 30px 0 25px; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 900;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    .numeral {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(5.2rem, 19vw, 9rem);
+      line-height: .95;
+      letter-spacing: .04em;
+      color: var(--purple-dark);
+      text-shadow: 0 5px 0 #e7e2ff;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 13px;
+    }
+    .answer {
+      position: relative;
+      min-height: 76px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      background: white;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 1.55rem;
+      font-weight: 900;
+      transition: transform .13s ease, border-color .13s ease, box-shadow .13s ease;
+    }
+    .answer:hover:not(:disabled), .answer:focus-visible {
+      outline: none;
+      transform: translateY(-2px);
+      border-color: var(--purple);
+      box-shadow: 0 8px 18px rgba(102,88,211,.14);
+    }
+    .answer:active:not(:disabled) { transform: translateY(1px); }
+    .answer:disabled { cursor: default; }
+    .answer.correct { color: #126b4b; border-color: var(--green); background: #e6f8f1; }
+    .answer.wrong { color: #a52e3e; border-color: var(--red); background: #fff0f2; }
+    .feedback {
+      min-height: 28px;
+      margin: 17px 0 0;
+      text-align: center;
+      font-weight: 850;
+      color: var(--muted);
+    }
+    .feedback.good { color: var(--green); }
+    .feedback.bad { color: var(--red); }
+
+    .result { text-align: center; }
+    .result-icon {
+      width: 88px; height: 88px;
+      margin: 2px auto 18px;
+      display: grid; place-items: center;
+      border-radius: 27px;
+      background: #fff1b7;
+      font-size: 2.7rem;
+      transform: rotate(-3deg);
+    }
+    h1 { margin: 0; font-size: clamp(2rem, 7vw, 3rem); letter-spacing: -.045em; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; margin: 10px 0 28px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 11px;
+      margin: 0 0 24px;
+    }
+    .stat { padding: 17px 8px; border-radius: 17px; background: #f4f1fb; }
+    .stat strong { display: block; font-size: clamp(1.35rem, 5vw, 1.9rem); font-variant-numeric: tabular-nums; }
+    .stat span { color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .score-note { margin: 0 0 25px; color: var(--muted); font-size: .88rem; }
+    .primary {
+      border: 0;
+      border-radius: 16px;
+      padding: 15px 26px;
+      color: white;
+      background: var(--purple);
+      box-shadow: 0 8px 0 var(--purple-dark);
+      cursor: pointer;
+      font-size: 1.06rem;
+      font-weight: 900;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .primary:hover, .primary:focus-visible { outline: 3px solid rgba(102,88,211,.25); outline-offset: 3px; }
+    .primary:active { transform: translateY(5px); box-shadow: 0 3px 0 var(--purple-dark); }
+    .hint { margin: 20px 0 0; color: var(--muted); font-size: .78rem; }
+
+    @media (max-width: 520px) {
+      body { padding: 12px; }
+      .card { border-radius: 22px; padding: 20px 16px 24px; }
+      .topbar { grid-template-columns: 1fr 1fr; }
+      .score-chip { display: none; }
+      .timer { grid-column: 2; }
+      .answers { gap: 10px; }
+      .answer { min-height: 68px; }
+      .stats { gap: 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="brand"><span class="logo" aria-hidden="true">Ⅷ</span> Roman Rocket</div>
+
+    <section id="intro" class="card result" aria-labelledby="intro-title">
+      <div class="result-icon" aria-hidden="true">🚀</div>
+      <p class="eyebrow">Roman numeral mission</p>
+      <h1 id="intro-title">Ready to launch?</h1>
+      <p class="subtitle">Match 10 Roman numerals with their numbers. Be accurate, then be quick!</p>
+      <button id="start" class="primary" type="button">Start game →</button>
+      <p class="hint">Press Enter to start</p>
+    </section>
+
+    <section id="quiz" class="card hidden" aria-labelledby="question-heading">
+      <div class="topbar">
+        <span id="progress-label" class="progress-label">Question 1 of 10</span>
+        <span id="score-live" class="score-chip">0 pts</span>
+        <span class="timer" aria-label="Elapsed time">⏱ <span id="timer">0:00.0</span></span>
+      </div>
+      <div class="progress-track" aria-hidden="true"><div id="progress-fill" class="progress-fill"></div></div>
+      <div class="time-track" aria-hidden="true"><div id="time-fill" class="time-fill"></div></div>
+
+      <div class="prompt">
+        <p class="eyebrow">What number is this?</p>
+        <h1 id="question-heading" class="numeral">V</h1>
+      </div>
+
+      <div id="answers" class="answers" role="group" aria-label="Answer choices"></div>
+      <p id="feedback" class="feedback" aria-live="polite"></p>
+      <p class="hint">Tip: press the answer number on your keyboard</p>
+    </section>
+
+    <section id="results" class="card result hidden" aria-labelledby="result-title">
+      <div id="result-icon" class="result-icon" aria-hidden="true">🏆</div>
+      <p class="eyebrow">Mission complete</p>
+      <h1 id="result-title">Brilliant work!</h1>
+      <p id="result-message" class="subtitle"></p>
+      <div class="stats">
+        <div class="stat"><strong id="correct-stat">0/10</strong><span>correct</span></div>
+        <div class="stat"><strong id="time-stat">0:00</strong><span>total time</span></div>
+        <div class="stat"><strong id="score-stat">0</strong><span>points</span></div>
+      </div>
+      <p class="score-note">Each correct answer earns 1,000 points, plus up to 200 speed points.</p>
+      <button id="restart" class="primary" type="button">Play again ↻</button>
+      <p class="hint">Press Enter to play again</p>
+    </section>
+  </main>
+
+  <script>
+    // --- Easy-to-change game settings ---
+    const MIN_NUMBER = 1;
+    const MAX_NUMBER = 8;
+    const TOTAL_QUESTIONS = 10;
+    const SPEED_WINDOW_SECONDS = 10;
+    const CORRECT_POINTS = 1000;
+    const MAX_SPEED_BONUS = 200;
+
+    const romanTable = [
+      [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+      [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+      [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]
+    ];
+
+    const intro = document.querySelector("#intro");
+    const quiz = document.querySelector("#quiz");
+    const results = document.querySelector("#results");
+    const numeralEl = document.querySelector("#question-heading");
+    const answersEl = document.querySelector("#answers");
+    const feedbackEl = document.querySelector("#feedback");
+    const timerEl = document.querySelector("#timer");
+    const scoreLiveEl = document.querySelector("#score-live");
+    const progressLabelEl = document.querySelector("#progress-label");
+    const progressFillEl = document.querySelector("#progress-fill");
+    const timeFillEl = document.querySelector("#time-fill");
+    const startButton = document.querySelector("#start");
+    const restartButton = document.querySelector("#restart");
+
+    let questions = [];
+    let questionIndex = 0;
+    let correctCount = 0;
+    let score = 0;
+    let gameStartedAt = 0;
+    let questionStartedAt = 0;
+    let timerId = null;
+    let acceptingAnswer = false;
+
+    function toRoman(number) {
+      let remaining = number;
+      let result = "";
+      for (const [value, symbol] of romanTable) {
+        while (remaining >= value) {
+          result += symbol;
+          remaining -= value;
+        }
+      }
+      return result;
+    }
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function buildQuestions() {
+      const range = Array.from({ length: MAX_NUMBER - MIN_NUMBER + 1 }, (_, i) => MIN_NUMBER + i);
+      const list = [];
+      while (list.length < TOTAL_QUESTIONS) {
+        const cycle = shuffle(range);
+        if (list.length && cycle[0] === list[list.length - 1] && cycle.length > 1) {
+          [cycle[0], cycle[1]] = [cycle[1], cycle[0]];
+        }
+        list.push(...cycle);
+      }
+      return list.slice(0, TOTAL_QUESTIONS);
+    }
+
+    function buildChoices(answer) {
+      const fullRange = Array.from({ length: MAX_NUMBER - MIN_NUMBER + 1 }, (_, i) => MIN_NUMBER + i);
+      let distractors = shuffle(fullRange.filter(n => n !== answer)).slice(0, 3);
+      let distance = 1;
+      while (distractors.length < 3) {
+        for (const candidate of [answer - distance, answer + distance]) {
+          if (candidate > 0 && candidate !== answer && !distractors.includes(candidate)) distractors.push(candidate);
+          if (distractors.length === 3) break;
+        }
+        distance++;
+      }
+      return shuffle([answer, ...distractors]);
+    }
+
+    function formatTime(milliseconds, tenths = true) {
+      const totalSeconds = Math.max(0, milliseconds) / 1000;
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      const tenth = Math.floor((totalSeconds % 1) * 10);
+      return `${minutes}:${String(seconds).padStart(2, "0")}${tenths ? `.${tenth}` : ""}`;
+    }
+
+    function updateTimer() {
+      const now = performance.now();
+      timerEl.textContent = formatTime(now - gameStartedAt);
+      const questionSeconds = (now - questionStartedAt) / 1000;
+      const remaining = Math.max(0, 1 - questionSeconds / SPEED_WINDOW_SECONDS);
+      timeFillEl.style.width = `${remaining * 100}%`;
+    }
+
+    function renderQuestion() {
+      acceptingAnswer = true;
+      feedbackEl.textContent = "";
+      feedbackEl.className = "feedback";
+      const answer = questions[questionIndex];
+      numeralEl.textContent = toRoman(answer);
+      progressLabelEl.textContent = `Question ${questionIndex + 1} of ${TOTAL_QUESTIONS}`;
+      progressFillEl.style.width = `${(questionIndex / TOTAL_QUESTIONS) * 100}%`;
+      answersEl.replaceChildren();
+
+      buildChoices(answer).forEach(choice => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "answer";
+        button.dataset.value = choice;
+        button.setAttribute("aria-label", `Answer ${choice}`);
+        button.textContent = choice;
+        button.addEventListener("click", () => chooseAnswer(button, choice));
+        answersEl.append(button);
+      });
+
+      questionStartedAt = performance.now();
+      updateTimer();
+    }
+
+    function chooseAnswer(selectedButton, choice) {
+      if (!acceptingAnswer) return;
+      acceptingAnswer = false;
+      const answer = questions[questionIndex];
+      const elapsedSeconds = (performance.now() - questionStartedAt) / 1000;
+      const buttons = [...answersEl.querySelectorAll("button")];
+      buttons.forEach(button => {
+        button.disabled = true;
+        if (Number(button.dataset.value) === answer) button.classList.add("correct");
+      });
+
+      const isCorrect = choice === answer;
+      if (isCorrect) {
+        correctCount++;
+        const bonus = Math.round(MAX_SPEED_BONUS * Math.max(0, 1 - elapsedSeconds / SPEED_WINDOW_SECONDS));
+        const earned = CORRECT_POINTS + bonus;
+        score += earned;
+        feedbackEl.textContent = `Correct! +${earned.toLocaleString()} points`;
+        feedbackEl.classList.add("good");
+      } else {
+        selectedButton.classList.add("wrong");
+        feedbackEl.textContent = `${toRoman(answer)} means ${answer}. You’ll get the next one!`;
+        feedbackEl.classList.add("bad");
+      }
+      scoreLiveEl.textContent = `${score.toLocaleString()} pts`;
+
+      // Give learners extra time to read and absorb corrections.
+      const feedbackDelay = isCorrect ? 900 : 2200;
+      window.setTimeout(() => {
+        questionIndex++;
+        if (questionIndex < TOTAL_QUESTIONS) renderQuestion();
+        else showResults();
+      }, feedbackDelay);
+    }
+
+    function showResults() {
+      clearInterval(timerId);
+      const totalTime = performance.now() - gameStartedAt;
+      progressFillEl.style.width = "100%";
+      quiz.classList.add("hidden");
+      results.classList.remove("hidden");
+      document.querySelector("#correct-stat").textContent = `${correctCount}/${TOTAL_QUESTIONS}`;
+      document.querySelector("#time-stat").textContent = formatTime(totalTime, false);
+      document.querySelector("#score-stat").textContent = score.toLocaleString();
+
+      const ratio = correctCount / TOTAL_QUESTIONS;
+      const title = ratio === 1 ? "Perfect launch!" : ratio >= .8 ? "Brilliant work!" : ratio >= .5 ? "Nice progress!" : "Good first flight!";
+      const icon = ratio === 1 ? "🚀" : ratio >= .8 ? "🏆" : ratio >= .5 ? "⭐" : "💪";
+      document.querySelector("#result-title").textContent = title;
+      document.querySelector("#result-icon").textContent = icon;
+      document.querySelector("#result-message").textContent = ratio === 1
+        ? "You know every numeral in this mission."
+        : `You matched ${correctCount} Roman numeral${correctCount === 1 ? "" : "s"} correctly.`;
+      restartButton.focus();
+    }
+
+    function startGame() {
+      clearInterval(timerId);
+      questions = buildQuestions();
+      questionIndex = 0;
+      correctCount = 0;
+      score = 0;
+      gameStartedAt = performance.now();
+      scoreLiveEl.textContent = "0 pts";
+      intro.classList.add("hidden");
+      results.classList.add("hidden");
+      quiz.classList.remove("hidden");
+      renderQuestion();
+      timerId = setInterval(updateTimer, 100);
+    }
+
+    document.addEventListener("keydown", event => {
+      if (!quiz.classList.contains("hidden") && acceptingAnswer && /^\d$/.test(event.key)) {
+        const matchingAnswer = [...answersEl.querySelectorAll("button")]
+          .find(button => Number(button.dataset.value) === Number(event.key));
+        matchingAnswer?.click();
+      } else if (!intro.classList.contains("hidden") && event.key === "Enter") {
+        startGame();
+      } else if (!results.classList.contains("hidden") && event.key === "Enter") {
+        startGame();
+      }
+    });
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", startGame);
+    startButton.focus();
+  </script>
+</body>
+</html>
